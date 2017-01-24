@@ -1,6 +1,6 @@
 angular.module('vsGoogleAutocomplete', []);
 
-angular.module('vsGoogleAutocomplete').factory('vsGooglePlaceUtility', function() {
+angular.module('vsGoogleAutocomplete').factory('vsGooglePlaceUtility', function ($rootScope) {
 	function isGooglePlace(place) {
 		if (!place)
 			return false;
@@ -29,7 +29,7 @@ angular.module('vsGoogleAutocomplete').factory('vsGooglePlaceUtility', function(
 	function getAddrComponent(place, componentTemplate) {
 		var result;
 		if (!isGooglePlace(place))
-			return;
+		    return;
 		for (var i = 0; i < place.address_components.length; i++) {
 			var addressType = place.address_components[i].types[0];
 			if (componentTemplate[addressType]) {
@@ -46,16 +46,40 @@ angular.module('vsGoogleAutocomplete').factory('vsGooglePlaceUtility', function(
 		return place.place_id;
 	}
 
+	function find(array, attrs) {
+	    for (var i = 0, len = array.length; i < len; i++) {
+	        for (var key in attrs) {
+	            if (array[i][key] !== attrs[key]) {
+	                break;
+	            }
+	            return array[i];
+	        }
+	    }
+	    return undefined;
+	}
+
 	function getStreetNumber(place) {
 		var COMPONENT_TEMPLATE = { street_number: 'short_name' },
 			streetNumber = getAddrComponent(place, COMPONENT_TEMPLATE);
+
+	    if (streetNumber == undefined || streetNumber == 'undefined')
+	        streetNumber = '';
+
 		return streetNumber;
 	}
-
+    /// CHANGED FROM ORIGINAL
 	function getStreet(place) {
+
 		var COMPONENT_TEMPLATE = { route: 'long_name' },
 			street = getAddrComponent(place, COMPONENT_TEMPLATE);
-		return street;
+
+	    var COMPONENT_TEMPLATE2 = { street_number: 'short_name' },
+			streetNumber = getAddrComponent(place, COMPONENT_TEMPLATE2);
+
+		if (streetNumber == undefined || streetNumber == 'undefined')
+		    streetNumber = '';
+
+		return streetNumber + ' ' + street;
 	}
 
 	function getCity(place) {
@@ -65,8 +89,13 @@ angular.module('vsGoogleAutocomplete').factory('vsGooglePlaceUtility', function(
 	}
 
 	function getState(place) {
-		var COMPONENT_TEMPLATE = { administrative_area_level_1: 'short_name' },
+	    var COMPONENT_TEMPLATE = { administrative_area_level_1: 'long_name' },
 			state = getAddrComponent(place, COMPONENT_TEMPLATE);
+
+	    var modifiedState = find($rootScope.LocaleOptions.CountryStates, { Code: state });
+        if (modifiedState != undefined)
+            state = modifiedState.Title;
+
 		return state;
 	}
 
